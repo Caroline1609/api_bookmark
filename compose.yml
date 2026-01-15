@@ -1,0 +1,65 @@
+x-config:
+  db-user: &db-user ${DAMP_DATABASE_USERNAME? Set me in .env}
+  db-password: &db-password ${DAMP_DATABASE_PASSWORD? Set me in .env}
+  db-name: &db-name ${DAMP_DATABASE_NAME? Set me in .env}
+
+volumes:
+  db:
+
+
+services:
+  front:
+    image: nginx:1.29.4
+    ports:
+      - target: 80
+        host_ip: 127.10.10.10
+        published: 80
+    volumes:
+      - type: bind
+        read_only: false
+        source: ./front-public/
+        target: /usr/share/nginx/html
+  api:
+    build:
+      context: ./php.docker
+      args:
+        PHP_DOCKER_IMAGE_VERSION: 8.5.0RC4-apache-trixie
+    ports:
+      - target: 80
+        host_ip: 127.10.10.20
+        published: 80
+    volumes:
+      - type: bind
+        read_only: false
+        source: ./api-public/
+        target: /var/www/html
+    environment:
+      DAMP_DATABASE_NAME: *db-name
+      DAMP_DATABASE_USERNAME: *db-user 
+      DAMP_DATABASE_PORT: 3306
+      DAMP_DATABASE_PASSWORD: *db-password
+  db:
+    image: mariadb:12.0.2-ubi10
+    environment:
+      MARIADB_USER: *db-user
+      MARIADB_PASSWORD: *db-password
+      MARIADB_DATABASE: *db-name
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 1
+    ports:
+      - target: 3306
+        host_ip: 127.10.10.20
+        published: 3306
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping" ]
+      interval: 30s
+      timeout: 2s
+      retries: 3
+    volumes:
+      - type: volume
+        source: db
+        target: /var/lib/mysql
+        read_only: false
+      - type: bind
+        source: ./dump
+        target: /docker-entrypoint-initdb.d
+        read_only: true

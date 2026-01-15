@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+declare -r api_host=127.10.10.20
+
+main()
+{
+	curl -i -X GET http://$api_host/bookmarks
+}
+
+main

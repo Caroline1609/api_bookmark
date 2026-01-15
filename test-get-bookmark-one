@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+declare -r api_host=127.10.10.20
+
+main()
+{
+	local -r bookmark_id=${1?Manque le Bookmark ID en paramètre du script test}
+	curl -i -X GET "http://$api_host/bookmarks/$bookmark_id"
+}
+
+main "$@"
