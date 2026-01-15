@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Bookmarks</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self' http://127.10.10.20;
+      script-src 'self' 'unsafe-inline';
+      script-src-elem 'self' 'unsafe-inline';">
+    </meta>
+
+    <script type='module'>
+      const bookmarks = document.getElementById('bookmarks');
+      const message = document.querySelector('.message');
+      const messageAdd = document.querySelector('.messageAdd')
+      
+      /**/
+      const addToTable = b =>
+      {
+        const row = bookmarks.insertRow();
+        const titleCell = row.insertCell();
+        titleCell.textContent = b.Title;
+        const urlCell = row.insertCell();
+        urlCell.textContent = b.URL || b.url || '';
+        const descCell = row.insertCell();
+        descCell.textContent = b.Description || b.description || '';
+        const deleteButton = row.insertCell(); //Ajoute du bouton supprimer
+        deleteButton.innerHTML = '<button class="favorite styled" type="button">Supprimer</button>';
+
+        deleteButton.addEventListener('click', () => deleteBookmark(b._id, row)); 
+        
+        
+        const modifyButton = row.insertCell(); // Ajoute du bouton modifier
+        modifyButton.innerHTML = '<button class="favorite styled" id="modify" type="button">Modifier</button>';
+
+        
+
+      };
+
+      /*Récupérer tout les bookmarks*/
+      const all = await fetch('http://127.10.10.20/bookmarks').then(r => r.json());
+      all.map(addToTable);
+
+      const btn = document.getElementById('modify');
+
+      btn.addEventListener('click', async (event) => {
+
+        const modifyButton = event.target;
+
+        if(btn.textContent === "Modifier"){
+
+          titleCell.innerHTML = `<input type="text" value="${titleCell.textContent}">`;
+          urlCell.innerHTML = `<input type="text" value="${urlCell.textContent}">`;
+          descCell.innerHTML = `<input type="text" value="${descCell.textContent}">`;
+          btn.textContent = "Sauvegarder";          
+        } else {
+      titleCell.textContent = titleCell.querySelector('input').value;
+      urlCell.textContent = urlCell.querySelector('input').value;
+      descCell.textContent = descCell.querySelector('input').value;
+      btn.textContent = "Modifier";
+    }
+
+
+          
+      })
+
+
+
+
+
+
+
+
+
+
+
+
+      /*Function pour supprimer un bookmark*/
+      function deleteBookmark(id, rowElement) {
+
+        if (window.confirm("​⚠️​ Voulez-vous vraiment supprimer le bookmark ? ​⚠️​​")) {
+
+          if (window.confirm("​⚠️​Êtes-vous certain de vouloir supprimer ce bookmark?​⚠️​")) {
+
+            message.textContent = 'Le bookmark a bien était supprimer';
+
+            setTimeout(function() {
+              message.textContent = '';
+            }, 3000);
+
+            return fetch(`http://127.10.10.20/bookmarks/${encodeURIComponent(id)}`, { method: 'DELETE' }) 
+            .then( _ => rowElement.remove());
+          }
+            
+        }
+        
+      }
+
+
+      const form = document.getElementById('bookmark-form');
+
+      form.addEventListener("submit", async function(event){ // 
+          event.preventDefault();
+
+          const leTitre = document.getElementById('bookmark-title').value;
+          const lUrl = document.getElementById('bookmark-url').value;
+          const laDescription = document.getElementById('bookmark-description').value;
+
+          const newbookmark = {
+              title: leTitre,
+              url: lUrl,
+             description: laDescription
+            };
+
+            const reponse = await fetch(`http://127.10.10.20/bookmarks`, {
+            method: 'POST',
+            headers:{
+              "Content-Type" : "application/json",
+            },
+            body : JSON.stringify(newbookmark),
+          }); 
+
+          const savedBookmark = await reponse.json();
+        addToTable(savedBookmark);
+
+        messageAdd.textContent = "✅ Ajout réussi";
+        form.reset();
+
+        setTimeout(function() {
+            messageAdd.textContent = '';
+        }, 3000);
+
+        }); 
+
+
+
+
+
+
+
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div>
+          <h1>Mes marque-pages</h1>
+          <div class="lead">Liste des signets récuperer depuis l'API</div>
+        </div>
+      </header>
+
+
+      <form id="bookmark-form" class="card bookmark-form" method="POST">
+        <div class="card-body">
+          <h2>Ajouter un bookmark</h2>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="bookmark-title">Titre</label>
+              <input type="text" name="title" id="bookmark-title" value="testmarche" required placeholder="Ex: Tutoriel JS">
+            </div>
+
+            <div class="form-field">
+              <label for="bookmark-url">URL</label>
+              <input type="url" name="url" id="bookmark-url" value="https://developer.mozilla.org/fr/docs/Web/API/Fetch_API/Using_Fetch" required placeholder="https://example.com">
+            </div>
+
+            <div class="form-field full-width">
+              <label for="bookmark-description">Description</label>
+              <input type="text" name="description" id="bookmark-description" value="test test test" placeholder="Brève description (optionnel)">
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn">Créer</button>
+          </div>
+          <span class="messageAdd"></span>
+        </div>
+      </form>
+
+      <div class="card">
+        <span class="message"></span>
+        <div class="table-wrap">
+          <table id='bookmarks' class="table" aria-describedby="bookmark-list">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>URL</th>
+                <th>Description</th>
+                <th>Supprimer</th>
+                <th>Modifier</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- lignes injectées ici -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    
+  </body>
+</html>
